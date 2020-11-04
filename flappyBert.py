@@ -24,13 +24,13 @@ def draw_pipes(pipes):
         else:
             screen.blit(pipe_surface, pipe)
 
-def check_colisions(pipes):
-    if robert_rect.bottom >= 440:
-        return False
+def is_any_collision(pipes):
+    if robert_rect.bottom >= 440 or robert_rect.bottom < -360:
+        return True
     for pipe in pipes:
         if pipe.colliderect(robert_rect):
-            return False
-    return True
+            return True
+    return False
 
 def rotate_robert(robert):
     new_robert = pygame.transform.rotozoom(robert, -robert_movement*2, 1)
@@ -61,8 +61,10 @@ def update_high_score(score, high_score):
     return high_score
 
 pygame.init()
-pygame.display.set_caption("Flappy Bert")
 screen = pygame.display.set_mode((288, 512))
+pygame.display.set_caption("Flappy Bert")
+icon = pygame.image.load("assets/icon.png").convert_alpha()
+pygame.display.set_icon(icon)
 clock = pygame.time.Clock()
 
 is_game_active = True
@@ -86,7 +88,7 @@ pipe_surface = pygame.image.load("assets/pipe.png").convert_alpha()
 pipe_list = []
 pipe_heights = [200, 250, 300]
 SPAWNPIPE = pygame.USEREVENT
-pygame.time.set_timer(SPAWNPIPE, 1200)
+pygame.time.set_timer(SPAWNPIPE, 1000)
 pipe_number = 0
 pipe_to_pass_position = 1000
 
@@ -131,7 +133,8 @@ while not exit_pressed:
         robert_movement += gravity
         robert_rect.centery += robert_movement
 
-        is_game_active = check_colisions(pipe_list)
+        if is_any_collision(pipe_list):
+            is_game_active = False
 
         # Floor
         floor_x -= 1
