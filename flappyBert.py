@@ -27,10 +27,14 @@ def draw_pipes(pipes):
 def is_any_collision(pipes):
     if robert_rect.bottom >= 440 or robert_rect.bottom < -360:
         hit_sound.play()
+        vroom_sound.stop()
+        pygame.mixer.music.fadeout(500)
         return True
     for pipe in pipes:
         if pipe.colliderect(robert_rect):
             hit_sound.play()
+            vroom_sound.stop()
+            pygame.mixer.music.fadeout(500)
             return True
     return False
 
@@ -60,6 +64,8 @@ def is_pipe_passed(pipe_position):
 def update_high_score(score, high_score):
     if score > high_score:
         high_score = score
+        with open("save", "w") as save:
+            save.write(str(score))
     return high_score
 
 pygame.mixer.pre_init(frequency = 44100, size = 16, channels = 1, buffer = 512)
@@ -71,6 +77,7 @@ pygame.display.set_icon(icon)
 clock = pygame.time.Clock()
 
 is_game_active = False
+firstPlay = True
 exit_pressed = False
 
 gravity = 0.15
@@ -78,7 +85,8 @@ robert_movement = 0
 floor_x = 0
 
 score = 0
-high_score = 0
+with open("save", "r") as save:
+    high_score = int(save.read())
 
 large_font = pygame.font.Font("assets/font.ttf",42)
 medium_font = pygame.font.Font("assets/font.ttf",32)
@@ -92,7 +100,9 @@ rotated_robert = robert_surface
 pipe_surface = pygame.image.load("assets/pipe.png").convert_alpha()
 
 point_sound = pygame.mixer.Sound("sound/sfx_point.wav")
-hit_sound = pygame.mixer.Sound("sound/sfx_hit.wav")  
+hit_sound = pygame.mixer.Sound("sound/sfx_hit.wav")
+vroom_sound = pygame.mixer.Sound("sound/sfx_vroom.wav")
+engine_sound = pygame.mixer.music.load("sound/sfx_engine.wav")
 
 pipe_list = []
 pipe_heights = [200, 250, 300]
@@ -111,14 +121,18 @@ while not exit_pressed:
             if event.key == pygame.K_SPACE and is_game_active:
                 robert_movement = 0
                 robert_movement -= 5
+                vroom_sound.stop()
+                vroom_sound.play()
             if event.key == pygame.K_SPACE and not is_game_active:
                 pipe_list = []
                 pipe_number = 0
                 pipe_to_pass_position = 1000
-                robert_rect.center = (50, 256)
+                robert_rect.center = (50, 200)
                 robert_movement = 0
                 score = 0
                 is_game_active = True
+                firstPlay = False
+                pygame.mixer.music.play(-1)
         if event.type == SPAWNPIPE:
             pipe_list.extend(create_pipe())
             pipe_to_pass_position = pipe_list[pipe_number].centerx
@@ -152,10 +166,10 @@ while not exit_pressed:
             floor_x = 0
     else:
         title_surface = large_font.render("Flappy Bert", False, (255, 255, 255))
-        title_rect = title_surface.get_rect(center = (144, 180))
+        title_rect = title_surface.get_rect(center = (144, 170))
         screen.blit(title_surface, title_rect)
         description_surface = small_font.render("(press space)", False, (255, 255, 255))
-        description__rect = description_surface.get_rect(center = (144, 230))
+        description__rect = description_surface.get_rect(center = (144, 220))
         screen.blit(description_surface, description__rect)
 
     # Draw elements
@@ -163,8 +177,9 @@ while not exit_pressed:
     screen.blit(rotated_robert, robert_rect)
     draw_floor()
 
-    high_score = update_high_score(score, high_score)
-    display_score(is_game_active)
+    if not firstPlay:
+        high_score = update_high_score(score, high_score)
+        display_score(is_game_active)
 
 
     pygame.display.update()
